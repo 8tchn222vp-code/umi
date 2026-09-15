@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#087f8c">
+<title>とび森 海の幸チェックリスト</title>
+<style>
+:root{
+  --bg:#f4fbfc;--card:#fff;--text:#183238;--muted:#688086;--accent:#087f8c;
+  --accent2:#e6f6f7;--border:#d7e7e9;--shadow:0 3px 14px rgba(20,80,90,.08);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Noto Sans JP","Hiragino Kaku Gothic ProN",sans-serif}
+header{position:sticky;top:0;z-index:10;background:rgba(244,251,252,.94);backdrop-filter:blur(12px);padding:14px 14px 10px;border-bottom:1px solid var(--border)}
+h1{font-size:21px;margin:0 0 10px}
+.sub{font-size:12px;color:var(--muted)}
+.progress{background:#dbecef;height:9px;border-radius:99px;overflow:hidden;margin-top:10px}
+.progress>div{height:100%;background:var(--accent);transition:.25s}
+.stats{display:flex;justify-content:space-between;font-size:13px;margin-top:6px}
+main{max-width:760px;margin:auto;padding:12px}
+.controls{display:grid;gap:8px;margin-bottom:10px}
+input[type=search]{width:100%;padding:12px 14px;border:1px solid var(--border);border-radius:12px;font-size:16px;background:white;outline:none}
+.tabs{display:flex;gap:7px;overflow:auto;padding-bottom:2px}
+button{border:1px solid var(--border);background:white;color:var(--text);padding:9px 12px;border-radius:999px;font-size:13px;white-space:nowrap}
+button.active{background:var(--accent);border-color:var(--accent);color:white}
+.grid{display:grid;gap:9px}
+.item{background:var(--card);border:1px solid var(--border);border-radius:15px;padding:13px;box-shadow:var(--shadow);display:flex;gap:11px;align-items:flex-start}
+.item.done{opacity:.58}
+.check{width:25px;height:25px;flex:none;accent-color:var(--accent);margin-top:1px}
+.info{min-width:0;flex:1}
+.top{display:flex;align-items:center;gap:8px}
+.name{font-weight:700;font-size:16px}
+.no{font-size:11px;color:var(--muted)}
+.price{margin-left:auto;font-weight:700;color:var(--accent);white-space:nowrap;font-size:13px}
+.meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}
+.tag{background:var(--accent2);border-radius:7px;padding:4px 7px;font-size:11px;color:#27616a}
+.detail{font-size:11px;color:var(--muted);margin-top:7px;line-height:1.6}
+.empty{text-align:center;color:var(--muted);padding:35px 10px}
+footer{text-align:center;color:var(--muted);font-size:11px;padding:22px 10px 35px}
+.reset{display:block;margin:14px auto 0;border-radius:10px}
+@media(min-width:650px){.grid{grid-template-columns:1fr 1fr}.controls{grid-template-columns:1fr auto}.tabs{grid-column:1/-1}}
+</style>
+</head>
+<body>
+<header>
+  <h1>🌊 とび森 海の幸チェックリスト</h1>
+  <div class="sub">とびだせ どうぶつの森 amiibo＋対応</div>
+  <div class="progress"><div id="bar"></div></div>
+  <div class="stats"><span id="count">0 / 30 寄贈済み</span><span id="percent">0%</span></div>
+</header>
+
+<main>
+  <section class="controls">
+    <input id="search" type="search" placeholder="海の幸の名前を検索（ひらがなOK）">
+    <div class="tabs">
+      <button class="active" data-filter="all">すべて</button>
+      <button data-filter="todo">未寄贈</button>
+      <button data-filter="done">寄贈済み</button>
+      <button data-filter="month">今月出る</button>
+    </div>
+  </section>
+  <section id="list" class="grid"></section>
+  <button class="reset" id="reset">チェックを全部リセット</button>
+</main>
+
+<footer>
+  データ参照：とびだせ どうぶつの森 amiibo＋攻略情報等。<br>
+  チェック状況はこの端末のブラウザに保存されます。
+</footer>
+
+<script>
+const sea = [
+ {no:10,name:"アコヤガイ",yomi:"あこやがい",months:[1,2,3,4,5,6,7,8,9,10,11,12],time:"24時間",shadow:"やや小",move:"不動",price:1600},
+ {no:18,name:"アマエビ",yomi:"あまえび",months:[9,10,11,12],time:"16時～09時",shadow:"やや小",move:"並（緩急）",price:650},
+ {no:7,name:"アワビ",yomi:"あわび",months:[1,2,3,4,5,6,7,8,9,10,11,12],time:"16時～09時",shadow:"中",move:"遅い",price:400},
+ {no:20,name:"イセエビ",yomi:"いせえび",months:[9,10,11,12],time:"21時～04時",shadow:"やや大",move:"やや速（小刻み）",price:3000},
+ {no:12,name:"イソギンチャク",yomi:"いそぎんちゃく",months:[1,2,3,4,5,6,7,8,9,10,11,12],time:"24時間",shadow:"中",move:"不動",price:100},
+ {no:3,name:"ウニ",yomi:"うに",months:[5,6,7,8,9],time:"24時間",shadow:"やや小",move:"不動（少しずつ）",price:800},
+ {no:15,name:"ウミウシ",yomi:"うみうし",months:[1,2,3,4,5,6,7,8,9,10,11,12],time:"24時間",shadow:"やや小",move:"遅い（なめらか）",price:200},
+ {no:2,name:"ウミブドウ",yomi:"うみぶどう",months:[6,7,8,9],time:"24時間",shadow:"やや小",move:"不動",price:600},
+ {no:5,name:"オイスター",yomi:"おいすたー",months:[9,10,11,12,1,2],time:"24時間",shadow:"やや小",move:"不動",price:400},
+ {no:28,name:"オウムガイ",yomi:"おうむがい",months:[1,2,3,4,5,6,7,8,9,10,11,12],time:"24時間",shadow:"中",move:"普通（なめらか）",price:900},
+ {no:29,name:"カブトガニ",yomi:"かぶとがに",months:[7,8,9],time:"21時～04時",shadow:"中",move:"遅い",price:1500},
+ {no:19,name:"クルマエビ",yomi:"くるまえび",months:[6,7,8,9],time:"16時～09時",shadow:"やや小",move:"速い（なめらか）",price:1600},
+ {no:23,name:"ケガニ",yomi:"けがに",months:[11,12,1,2,3,4],time:"24時間",shadow:"中",move:"並（なめらか）",price:4000},
+ {no:6,name:"サザエ",yomi:"さざえ",months:[8,9,10,11,12,1,2,3,4,5],time:"16時～09時",shadow:"やや小",move:"遅い",price:300},
+ {no:17,name:"シャコ",yomi:"しゃこ",months:[1,2,3,4,5,6,7,8,9,10,11,12],time:"16時～09時",shadow:"やや小",move:"並（緩急）",price:1250},
+ {no:22,name:"ズワイガニ",yomi:"ずわいがに",months:[11,12,1,2,3,4],time:"24時間",shadow:"やや大",move:"並（なめらか）",price:4000},
+ {no:25,name:"タカアシガニ",yomi:"たかあしがに",months:[3,4],time:"24時間",shadow:"大",move:"やや速い",price:10000},
+ {no:26,name:"タコ",yomi:"たこ",months:[3,4,5,6,7,9,10,11,12,1],time:"24時間",shadow:"中",move:"速い（緩急）",price:1200},
+ {no:24,name:"タラバガニ",yomi:"たらばがに",months:[11,12,1,2,3],time:"24時間",shadow:"やや大",move:"速い（なめらか）",price:6000},
+ {no:30,name:"ダイオウグソクムシ",yomi:"だいおうぐそくむし",months:[1,2,3,4,5,6,7,8,9,10,11,12],time:"24時間",shadow:"中",move:"遅い",price:9000},
+ {no:27,name:"チンアナゴ",yomi:"ちんあなご",months:[1,2,3,4,5,6,7,8,9,10,11,12],time:"24時間",shadow:"やや小",move:"不動（ほんの少し）",price:600},
+ {no:8,name:"トコブシ",yomi:"とこぶし",months:[1,2,3,4,5,6,7,8,9,10,11,12],time:"16時～09時",shadow:"やや小",move:"遅い",price:300},
+ {no:14,name:"ナマコ",yomi:"なまこ",months:[11,12,1,2,3,4],time:"24時間",shadow:"中",move:"遅い",price:150},
+ {no:9,name:"ハマグリ",yomi:"はまぐり",months:[9,10,11,12,1,2,3,4],time:"24時間",shadow:"やや小",move:"遅い（小刻み）",price:300},
+ {no:13,name:"ヒトデ",yomi:"ひとで",months:[1,2,3,4,5,6,7,8,9,10,11,12],time:"24時間",shadow:"やや小",move:"ほぼ不動",price:100},
+ {no:16,name:"ヒラムシ",yomi:"ひらむし",months:[8,9],time:"16時～09時",shadow:"やや小",move:"遅い",price:200},
+ {no:4,name:"フジツボ",yomi:"ふじつぼ",months:[1,2,3,4,5,6,7,8,9,10,11,12],time:"24時間",shadow:"小",move:"ほぼ不動",price:200},
+ {no:11,name:"ホタテ",yomi:"ほたて",months:[1,2,3,4,5,6,7,8,9,10,11,12],time:"24時間",shadow:"中",move:"速い",price:1000},
+ {no:21,name:"ロブスター",yomi:"ろぶすたー",months:[1,2,3,4,5,6,7,8,9,10,11,12],time:"24時間",shadow:"やや大",move:"速い（なめらか）",price:2500},
+ {no:1,name:"ワカメ",yomi:"わかめ",months:[11,12,1,2,3,4,5,6,7],time:"24時間",shadow:"やや大",move:"不動",price:200}
+];
+
+const key="tobimori_seafood_checked_v1";
+let checked=JSON.parse(localStorage.getItem(key)||"[]");
+let filter="all";
+const $=id=>document.getElementById(id);
+const month=new Date().getMonth()+1;
+
+function save(){localStorage.setItem(key,JSON.stringify(checked));}
+function render(){
+  const q=$("search").value.trim().toLowerCase();
+  let rows=sea.filter(x=>{
+    const text=(x.name+x.yomi).toLowerCase();
+    if(q && !text.includes(q)) return false;
+    const done=checked.includes(x.no);
+    if(filter==="todo" && done)return false;
+    if(filter==="done" && !done)return false;
+    if(filter==="month" && !x.months.includes(month))return false;
+    return true;
+  });
+  $("list").innerHTML=rows.length?rows.map(x=>{
+    const done=checked.includes(x.no);
+    return `<article class="item ${done?"done":""}">
+      <input class="check" type="checkbox" ${done?"checked":""} aria-label="${x.name}を寄贈済みにする" onchange="toggle(${x.no})">
+      <div class="info">
+        <div class="top"><span class="name">${x.name}</span><span class="no">No.${x.no}</span><span class="price">${x.price.toLocaleString()}ベル</span></div>
+        <div class="meta"><span class="tag">📅 ${x.months.length===12?"1年中":x.months.join("・")+"月"}</span><span class="tag">🕐 ${x.time}</span></div>
+        <div class="detail">魚影：${x.shadow}　｜　動き：${x.move}</div>
+      </div>
+    </article>`;
+  }).join(""):`<div class="empty">該当する海の幸がないよ。</div>`;
+  const done=checked.length;
+  $("count").textContent=`${done} / ${sea.length} 寄贈済み`;
+  const p=Math.round(done/sea.length*100);
+  $("percent").textContent=p+"%";
+  $("bar").style.width=p+"%";
+}
+function toggle(no){
+  checked=checked.includes(no)?checked.filter(x=>x!==no):[...checked,no];
+  save();render();
+}
+$("search").addEventListener("input",render);
+document.querySelectorAll("[data-filter]").forEach(b=>b.addEventListener("click",()=>{
+  document.querySelectorAll("[data-filter]").forEach(x=>x.classList.remove("active"));
+  b.classList.add("active");filter=b.dataset.filter;render();
+}));
+$("reset").addEventListener("click",()=>{
+  if(confirm("寄贈済みチェックを全部リセットする？")){checked=[];save();render();}
+});
+render();
+</script>
+</body>
+</html>
